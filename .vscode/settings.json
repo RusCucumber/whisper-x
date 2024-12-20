@@ -1,0 +1,11 @@
+{
+    "[python]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+        }
+    },
+    "python.analysis.extraPaths": [
+        "./src/dialogic_task_repetition"
+    ]
+}
