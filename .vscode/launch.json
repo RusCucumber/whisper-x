@@ -5,6 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "WhisperX Debugger",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "./src/whisperx/run_whisperx.py",
+            "console": "integratedTerminal",
+            "args": [
+                "-i",
+                "./samples",
+                "-d",
+                "cpu",
+                "-ct",
+                "int8"
+            ]
+        },
+        {
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
