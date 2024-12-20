@@ -1,0 +1,30 @@
+[project]
+name = "whisperx"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Ryuki Matsuura", email = "w.d.ryu.m@gmail.com" }
+]
+dependencies = [
+    "torch @ https://download.pytorch.org/whl/cu118/torch-2.0.0%2Bcu118-cp310-cp310-linux_x86_64.whl#sha256=4b690e2b77f21073500c65d8bb9ea9656b8cb4e969f357370bbc992a3b074764",
+    "torchaudio @ https://download.pytorch.org/whl/cu118/torchaudio-2.0.0%2Bcu118-cp310-cp310-linux_x86_64.whl#sha256=289d09b5ec8213907429ad953d4ec4c98096c380d99ce9f7b5ad2c64bc403555",
+    "pip>=24.3.1",
+]
+readme = "README.md"
+requires-python = ">= 3.8"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "ruff>=0.8.4",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/whisperx"]
