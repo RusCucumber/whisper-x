@@ -39,6 +39,7 @@ def read_configs() -> Dict[str, Any]:
     parser.add_argument("--input_dir", "-i", type=str, required=True)
     parser.add_argument("--output_dir", "-o", type=str, default=None)
     parser.add_argument("--device", "-d", type=str, default=None)
+    parser.add_argument("--device_asr", "-da", type=str, default="cpu")
     parser.add_argument("--batch_size", "-bs", type=int, default=16)
     parser.add_argument("--language", "-l", type=str, default="en")
     parser.add_argument("--compute_type", "-ct", type=str, default="float16")
@@ -51,6 +52,7 @@ def read_configs() -> Dict[str, Any]:
         "input_dir": Path(args.input_dir),
         "output_dir": make_output_dir(Path(args.input_dir), args.output_dir),
         "device": set_device(args.device),
+        "device_asr": args.device_asr,
         "batch_size": args.batch_size,
         "language": args.language,
         "compute_type": args.compute_type,
@@ -85,18 +87,27 @@ def read_pyannote_access_token() -> str:
 
 def load_pipeline(config: Dict[str, Any]):
     device = config["device"]
+    device_asr = config["device_asr"]
     language = config["language"]
     compute_type = config["compute_type"]
 
     pyannote_access_token = read_pyannote_access_token()
 
     print("Loading WhisperX Pipeline...", end=" ")
-    transcriber = whisperx.load_model("large-v2", device=device, compute_type=compute_type)
+    transcriber = whisperx.load_model("large-v2", device=device_asr, compute_type=compute_type)
     aligner, fa_metadata = whisperx.load_align_model(language_code=language, device=device)
     diarizer = whisperx.DiarizationPipeline(use_auth_token=pyannote_access_token, device=device)
     print("DONE!")
 
     return transcriber, aligner, fa_metadata, diarizer
+
+def save_result(wav_path: Path, output_dir: Path, result: Dict[str, Any]) -> None:
+    save_path = output_dir / f"{wav_path.stem}.json"
+    segments = {
+        "segments": result["segments"]
+    }
+    with open(save_path, "w") as f:
+        json.dump(segments, f, indent=4)
 
 def main() -> None:
     # 1. read configs
@@ -122,15 +133,19 @@ def main() -> None:
     # 4. apply pipleine
     pbar = tqdm(input_dir.glob("*.wav"), total=n_files)
     for wav_path in pbar:
-        pbar.set_description(f"Run WhisperX ... {wav_path.stem}")
         audio = whisperx.load_audio(wav_path)
         
+        pbar.set_description(f"[{wav_path.stem}] Transcribing ...")
         result = transcriber.transcribe(audio, batch_size=batch_size)
+
+        pbar.set_description(f"[{wav_path.stem}] Aligning ...")
         result = whisperx.align(result["segments"], aligner, fa_metadata, audio, device, return_char_alignments=False)
+
+        pbar.set_description(f"[{wav_path.stem}] Diarizing ...")
         dialize_segments = diarizer(audio, min_speakers=min_speakers, max_speakers=max_speakers)
         result = whisperx.assign_word_speakers(dialize_segments, result)
 
-        print(result["segments"])
+        save_result(wav_path, output_dir, result)
 
 if __name__ == "__main__":
     main()
