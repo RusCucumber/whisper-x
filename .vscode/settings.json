@@ -6,6 +6,6 @@
         }
     },
     "python.analysis.extraPaths": [
-        "./src/dialogic_task_repetition"
+        "./src/whisperx"
     ]
 }
