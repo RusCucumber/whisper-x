@@ -1,0 +1,1 @@
+/home/matsuura/Applications/anaconda3/envs/whisperx/bin/python /home/matsuura/Development/whisperx/src/whisperx/run_whisperx.py -i ./samples -d cpu -ct int8
