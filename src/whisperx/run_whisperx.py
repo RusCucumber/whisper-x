@@ -45,6 +45,7 @@ def read_configs() -> Dict[str, Any]:
     parser.add_argument("--compute_type", "-ct", type=str, default="float16")
     parser.add_argument("--min_speakers", type=int, default=None)
     parser.add_argument("--max_speakers", type=int, default=None)
+    parser.add_argument("--forced", action="store_true") # default=True
 
     args = parser.parse_args()
 
@@ -57,7 +58,8 @@ def read_configs() -> Dict[str, Any]:
         "language": args.language,
         "compute_type": args.compute_type,
         "min_speakers": args.min_speakers,
-        "max_speakers": args.max_speakers
+        "max_speakers": args.max_speakers,
+        "forced": args.forced
     }
 
     return config
@@ -101,8 +103,7 @@ def load_pipeline(config: Dict[str, Any]):
 
     return transcriber, aligner, fa_metadata, diarizer
 
-def save_result(wav_path: Path, output_dir: Path, result: Dict[str, Any]) -> None:
-    save_path = output_dir / f"{wav_path.stem}.json"
+def save_result(wav_path: Path, save_path: Path, result: Dict[str, Any]) -> None:
     segments = {
         "segments": result["segments"]
     }
@@ -119,6 +120,7 @@ def main() -> None:
     batch_size = config["batch_size"]
     min_speakers = config["min_speakers"]
     max_speakers = config["max_speakers"]
+    is_forced = config["forced"]
 
     # 2. check audio files
     n_files = check_files(input_dir)
@@ -133,6 +135,11 @@ def main() -> None:
     # 4. apply pipleine
     pbar = tqdm(input_dir.glob("*.wav"), total=n_files)
     for wav_path in pbar:
+        save_path = output_dir / f"{wav_path.stem}.json"
+        if save_path.exists() and not(is_forced):
+            pbar.set_description(f"[{wav_path.stem}] Skip ...")
+            continue
+
         audio = whisperx.load_audio(wav_path)
         
         pbar.set_description(f"[{wav_path.stem}] Transcribing ...")
@@ -145,7 +152,7 @@ def main() -> None:
         dialize_segments = diarizer(audio, min_speakers=min_speakers, max_speakers=max_speakers)
         result = whisperx.assign_word_speakers(dialize_segments, result)
 
-        save_result(wav_path, output_dir, result)
+        save_result(wav_path, save_path, result)
 
 if __name__ == "__main__":
     main()
